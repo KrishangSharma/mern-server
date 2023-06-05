@@ -31,7 +31,7 @@ const createTweet = async (req, res) => {
 
 const getTweets = async (req, res) => {
   try {
-    const tweets = await Tweet.find().populate("user", "userName");
+    const tweets = await Tweet.find().populate("user", "userName name");
 
     if (tweets.length == 0) {
       return res
