@@ -5,6 +5,12 @@ const User = require("../Models/userModel");
 const registerUser = async (req, res) => {
   try {
     const { name, userName, email, password } = req.body;
+    const avatar = req.file;
+
+    let profilePicturePath;
+    if (avatar) {
+      profilePicturePath = req.file.path;
+    }
 
     const ifExists = await User.findOne({ email });
 
@@ -28,6 +34,7 @@ const registerUser = async (req, res) => {
     const newUser = new User({
       name,
       userName,
+      avatar: profilePicturePath,
       email,
       password: hashedPassword,
     });
@@ -91,18 +98,96 @@ const loginUser = async (req, res) => {
   }
 };
 
+const updateUser = async (req, res) => {
+  try {
+    const { name, userName, email } = req.body;
+    const avatar = req.file;
+
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Update user fields
+    if (name) {
+      user.name = name;
+    }
+
+    if (userName) {
+      user.userName = userName;
+    }
+
+    if (email) {
+      user.email = email;
+    }
+
+    if (avatar) {
+      const profilePicturePath = avatar.path;
+      user.avatar = profilePicturePath;
+    }
+
+    // Save the updated user
+    const savedUser = await user.save();
+
+    // Return the updated user details
+    return res.status(200).json({
+      message: "User profile updated",
+      status: "Completed",
+      id: savedUser._id,
+      name: savedUser.name,
+      userName: savedUser.userName,
+      email: savedUser.email,
+      avatar: savedUser.avatar,
+    });
+  } catch (error) {
+    console.log(error.message);
+    res.status(500).send("Server Error");
+  }
+};
+
 const getUser = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).select("-password");
-    return res.status(200).json({ status: "Completed", user: user });
+
+    const modifiedUser = {
+      ...user._doc,
+      avatar: user.avatar
+        ? `${req.protocol}://${req.get("host")}/${user.avatar.replace(
+            "\\",
+            "/"
+          )}`
+        : null,
+    };
+
+    return res.status(200).json({ status: "Completed", user: modifiedUser });
   } catch (error) {
     console.log(error.message);
     return res.status(500).send("Server Error!");
   }
 };
 
+const deleteUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const deletedUser = await user.deleteOne();
+
+    return res.status(200).json({ status: "Completed", user: deletedUser });
+  } catch (error) {
+    console.log(error.message);
+    return res.status(500).send("Server Error");
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
+  updateUser,
+  deleteUser,
   getUser,
 };
