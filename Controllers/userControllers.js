@@ -30,11 +30,15 @@ const registerUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    // Construct URL for profile picture
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const avatarUrl = `${baseUrl}/${profilePicturePath.replace(/\\/g, "/")}`;
+
     // Create the user
     const newUser = new User({
       name,
       userName,
-      avatar: profilePicturePath,
+      avatar: avatarUrl,
       email,
       password: hashedPassword,
     });
@@ -47,6 +51,7 @@ const registerUser = async (req, res) => {
       id: savedUser._id,
       name: savedUser.name,
       email: savedUser.email,
+      avatar: avatarUrl,
     });
   } catch (error) {
     console.log(error.message);
